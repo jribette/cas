@@ -511,15 +511,17 @@ public abstract class AbstractSamlProfileHandlerController {
                         registeredService, authnRequest);
 
         final MessageContext ctx = authenticationContext.getValue();
-        if (!SAMLBindingSupport.isMessageSigned(ctx)) {
-            if (adaptor.isAuthnRequestsSigned()) {
-                LOGGER.error("Metadata for [{}] says authentication requests are signed, yet this authentication request is not",
+        if (ctx.getMessage()!=null) {
+            if (!SAMLBindingSupport.isMessageSigned(ctx)) {
+                if (adaptor.isAuthnRequestsSigned()) {
+                    LOGGER.error("Metadata for [{}] says authentication requests are signed, yet this authentication request is not",
                         adaptor.getEntityId());
-                throw new SAMLException("AuthN request is not signed but should be");
+                    throw new SAMLException("AuthN request is not signed but should be");
+                }
+                LOGGER.info("Authentication request is not signed, so there is no need to verify its signature.");
+            } else {
+                this.samlObjectSigner.verifySamlProfileRequestIfNeeded(authnRequest, adaptor.getMetadataResolver(), request, ctx);
             }
-            LOGGER.info("Authentication request is not signed, so there is no need to verify its signature.");
-        } else {
-            this.samlObjectSigner.verifySamlProfileRequestIfNeeded(authnRequest, adaptor.getMetadataResolver(), request, ctx);
         }
 
         SamlUtils.logSamlObject(this.configBean, authnRequest);
